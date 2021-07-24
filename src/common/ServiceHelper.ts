@@ -28,6 +28,12 @@ export class ServiceHelper {
     );
   }
 
+  async validateToken(token: string) {
+    const isValid = await this.jwtService.verify(token);
+    Logger.debug('VALIDATE_TOKEN', isValid);
+    return isValid;
+  }
+
   hideSensitiveData(data: any) {
     delete (data as any).password;
     delete (data as any).__v;
