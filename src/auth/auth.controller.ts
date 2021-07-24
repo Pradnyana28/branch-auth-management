@@ -26,6 +26,6 @@ export class AuthController {
       username: payload.username,
       email: payload.email,
     });
-    return this.authService.createUser(payload);
+    return this.authService.registerUser(payload);
   }
 }

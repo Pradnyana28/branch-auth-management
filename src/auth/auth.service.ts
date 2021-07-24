@@ -62,7 +62,7 @@ export class AuthService {
     };
   }
 
-  async createUser(user) {
+  async registerUser(user) {
     Logger.debug('START registering new user');
 
     try {
@@ -77,6 +77,8 @@ export class AuthService {
           }),
         ),
       );
+
+      Logger.debug('RESPONSE', insertResult);
 
       return insertResult;
     } catch (e) {
