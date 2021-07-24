@@ -1,24 +1,9 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ClientProxy } from '@nestjs/microservices';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { compareSync } from 'bcrypt';
-import { addMonths, subDays } from 'date-fns';
 import { ServiceHelper } from 'src/common/ServiceHelper';
 
 @Injectable()
 export class AuthService extends ServiceHelper {
-  constructor(
-    @Inject('USER_CLIENT') protected readonly client: ClientProxy,
-    protected readonly jwtService: JwtService,
-  ) {
-    super();
-  }
-
   async validateUser(username: string, password: string): Promise<any> {
     Logger.debug('START validating user to login', { username });
 
@@ -43,24 +28,9 @@ export class AuthService extends ServiceHelper {
   }
 
   async login(user) {
-    const today = Date.now();
-    const accessTokenExpiredAt = addMonths(today, 1);
-    const refreshTokenExpiredAt = subDays(accessTokenExpiredAt, 2); // will expired 2 days before access token expiration
-    const accessTokenPayload = { userAttributes: user, accessTokenExpiredAt };
-    const refreshTokenPayload = {
-      userAttributes: user,
-      accessTokenExpiredAt,
-      refreshTokenExpiredAt,
-    };
-
-    Logger.debug('AUTH PAYLOAD', accessTokenPayload);
-    return {
-      userId: user._id,
-      accessToken: this.jwtService.sign(accessTokenPayload),
-      accessTokenExpiredAt,
-      refreshToken: this.jwtService.sign(refreshTokenPayload),
-      refreshTokenExpiredAt,
-    };
+    const accessTokenPayload = { userAttributes: user };
+    Logger.debug('AUTH_PAYLOAD', accessTokenPayload);
+    return this.generateToken(user._id, accessTokenPayload);
   }
 
   async registerUser(user) {

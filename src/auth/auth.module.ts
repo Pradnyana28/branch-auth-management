@@ -12,11 +12,11 @@ import { LocalStrategy } from '../common/LocalStrategy';
     ConfigModule.forRoot(),
     ClientsModule.register([
       {
-        name: process.env.SERVICE_CLIENT_NAME,
+        name: process.env.SERVICE_USER_NAME,
         transport: Transport.TCP,
         options: {
-          host: process.env.SERVICE_HOST,
-          port: parseFloat(process.env.SERVICE_PORT),
+          host: process.env.SERVICE_USER_HOST,
+          port: parseFloat(process.env.SERVICE_USER_PORT),
         },
       },
     ]),

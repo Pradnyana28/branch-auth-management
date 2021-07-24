@@ -1,6 +1,12 @@
-import { Logger, RequestTimeoutException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  RequestTimeoutException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
+import { subDays, addMonths } from 'date-fns';
 import {
   catchError,
   firstValueFrom,
@@ -9,9 +15,13 @@ import {
   TimeoutError,
 } from 'rxjs';
 
+@Injectable()
 export class ServiceHelper {
-  protected readonly client: ClientProxy;
-  protected readonly jwtService: JwtService;
+  constructor(
+    @Inject('USER_CLIENT')
+    protected readonly client: ClientProxy,
+    protected readonly jwtService: JwtService,
+  ) {}
 
   async call(commandKey: string | Record<string, unknown>, payload?: any) {
     Logger.log(`EMIT to '${JSON.stringify(commandKey)}'`);
@@ -26,6 +36,24 @@ export class ServiceHelper {
         }),
       ),
     );
+  }
+
+  async generateToken(idUser: string, payload: Record<string, unknown>) {
+    const today = Date.now();
+    const accessTokenExpiredAt = addMonths(today, 1);
+    const refreshTokenExpiredAt = subDays(accessTokenExpiredAt, 2); // will expired 2 days before access token expiration
+    const accessTokenPayload = { ...payload, accessTokenExpiredAt };
+    const refreshTokenPayload = {
+      ...accessTokenPayload,
+      refreshTokenExpiredAt,
+    };
+    return {
+      userId: idUser,
+      accessToken: this.jwtService.sign(accessTokenPayload),
+      accessTokenExpiredAt,
+      refreshToken: this.jwtService.sign(refreshTokenPayload),
+      refreshTokenExpiredAt,
+    };
   }
 
   async validateToken(token: string) {

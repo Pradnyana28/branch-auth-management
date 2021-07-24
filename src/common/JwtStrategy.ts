@@ -14,6 +14,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'local') {
 
   async validate(payload) {
     Logger.debug('VALIDATE_TOKEN', payload);
-    return { id: payload.sub, user: payload.user };
+    return payload;
   }
 }
