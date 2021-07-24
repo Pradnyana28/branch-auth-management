@@ -2,51 +2,40 @@ import {
   Inject,
   Injectable,
   Logger,
-  RequestTimeoutException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
 import { compareSync } from 'bcrypt';
-import {
-  catchError,
-  firstValueFrom,
-  throwError,
-  timeout,
-  TimeoutError,
-} from 'rxjs';
+import { addMonths, subDays } from 'date-fns';
+import { ServiceHelper } from 'src/common/ServiceHelper';
 
 @Injectable()
-export class AuthService {
+export class AuthService extends ServiceHelper {
   constructor(
-    @Inject('USER_CLIENT')
-    private readonly client: ClientProxy,
-    private readonly jwtService: JwtService,
-  ) {}
+    @Inject('USER_CLIENT') protected readonly client: ClientProxy,
+    protected readonly jwtService: JwtService,
+  ) {
+    super();
+  }
 
   async validateUser(username: string, password: string): Promise<any> {
     Logger.debug('START validating user to login', { username });
 
     try {
-      const user = await firstValueFrom(
-        this.client.send({ role: 'user', cmd: 'get' }, { username }).pipe(
-          timeout(5000),
-          catchError((err) => {
-            if (err instanceof TimeoutError) {
-              return throwError(new RequestTimeoutException());
-            }
-            return throwError(err);
-          }),
-        ),
-      );
+      const user = await this.call({ role: 'user', cmd: 'get' }, { username });
 
       if (!user) {
-        Logger.debug('No user found');
-        return null;
+        Logger.debug('User Not Found');
+        throw new UnauthorizedException('Username or password is incorrect');
       }
 
-      if (compareSync(password, user?.password)) {
-        return user;
+      if (!compareSync(password, user?.password)) {
+        Logger.debug('Password doesnt match');
+        throw new UnauthorizedException('Username or password is incorrect');
       }
+
+      return this.hideSensitiveData(user);
     } catch (e) {
       Logger.log(e);
       throw e;
@@ -54,11 +43,23 @@ export class AuthService {
   }
 
   async login(user) {
-    const payload = { user, sub: user.id };
+    const today = Date.now();
+    const accessTokenExpiredAt = addMonths(today, 1);
+    const refreshTokenExpiredAt = subDays(accessTokenExpiredAt, 2); // will expired 2 days before access token expiration
+    const accessTokenPayload = { userAttributes: user, accessTokenExpiredAt };
+    const refreshTokenPayload = {
+      userAttributes: user,
+      accessTokenExpiredAt,
+      refreshTokenExpiredAt,
+    };
 
+    Logger.debug('AUTH PAYLOAD', accessTokenPayload);
     return {
-      userId: user.id,
-      accessToken: this.jwtService.sign(payload),
+      userId: user._id,
+      accessToken: this.jwtService.sign(accessTokenPayload),
+      accessTokenExpiredAt,
+      refreshToken: this.jwtService.sign(refreshTokenPayload),
+      refreshTokenExpiredAt,
     };
   }
 
@@ -66,19 +67,15 @@ export class AuthService {
     Logger.debug('START registering new user');
 
     try {
-      const insertResult = await firstValueFrom(
-        this.client.send({ role: 'user', cmd: 'create' }, user).pipe(
-          timeout(5000),
-          catchError((err) => {
-            if (err instanceof TimeoutError) {
-              return throwError(new RequestTimeoutException());
-            }
-            return throwError(err);
-          }),
-        ),
+      const insertResult = await this.call(
+        { role: 'user', cmd: 'create' },
+        user,
       );
 
       Logger.debug('RESPONSE', insertResult);
+      if (insertResult.error) {
+        return insertResult.error;
+      }
 
       return insertResult;
     } catch (e) {

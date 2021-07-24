@@ -3,6 +3,7 @@ import {
   Controller,
   Logger,
   Post,
+  Req,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -15,9 +16,9 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('signin')
-  async login(@Body() payload) {
+  async login(@Req() req, @Body() payload) {
     Logger.debug('START loggin in user', { username: payload.username });
-    return this.authService.login(payload);
+    return this.authService.login(req.user);
   }
 
   @Post('register')
