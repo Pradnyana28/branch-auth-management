@@ -1,11 +1,24 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import {
+  BadRequestException,
+  createParamDecorator,
+  ExecutionContext,
+} from '@nestjs/common';
 import { Request } from 'express';
 
-export const ApiAuthenticated = createParamDecorator(
-  (jwtService: JwtService, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest<Request>();
-    const token = request.headers['authorization'];
-    return jwtService.verify(token);
+export const UserSession = createParamDecorator(
+  (data: any, ctx: ExecutionContext) => {
+    switch (ctx.getType()) {
+      case 'rpc': {
+        const [payload] = ctx.getArgs();
+        if (!payload.idUser) {
+          throw new BadRequestException('idUser is required');
+        }
+        return null;
+      }
+
+      default:
+        const request = ctx.switchToHttp().getRequest<Request>();
+        return (request as any).user;
+    }
   },
 );

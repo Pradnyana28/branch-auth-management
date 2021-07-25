@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Logger,
@@ -9,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from '../common/LocalAuthGuard';
+import { AuthGuard } from 'src/common/AuthGuard';
+import { UserSession } from 'src/common/decorators';
 
 @Controller('auth')
 export class AuthController {
@@ -28,5 +31,11 @@ export class AuthController {
       email: payload.email,
     });
     return this.authService.registerUser(payload);
+  }
+
+  @Post('refresh')
+  @UseGuards(AuthGuard)
+  async refresh(@UserSession() user: any) {
+    return this.authService.extendToken(user);
   }
 }

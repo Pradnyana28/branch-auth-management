@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
-import { subDays, addMonths } from 'date-fns';
+import { subDays, addDays } from 'date-fns';
 import {
   catchError,
   firstValueFrom,
@@ -40,12 +40,15 @@ export class ServiceHelper {
 
   async generateToken(idUser: string, payload: Record<string, unknown>) {
     const today = Date.now();
-    const accessTokenExpiredAt = addMonths(today, 1);
+    const accessTokenExpiredAt = addDays(today, 30);
     const refreshTokenExpiredAt = subDays(accessTokenExpiredAt, 2); // will expired 2 days before access token expiration
-    const accessTokenPayload = { ...payload, accessTokenExpiredAt };
+    const accessTokenPayload = {
+      ...payload,
+      expirationDate: accessTokenExpiredAt,
+    };
     const refreshTokenPayload = {
       ...accessTokenPayload,
-      refreshTokenExpiredAt,
+      expirationDate: refreshTokenExpiredAt,
     };
     return {
       userId: idUser,
@@ -56,8 +59,8 @@ export class ServiceHelper {
     };
   }
 
-  async validateToken(token: string) {
-    const isValid = await this.jwtService.verify(token);
+  validateToken(token: string) {
+    const isValid = this.jwtService.verify(token);
     Logger.debug('VALIDATE_TOKEN', isValid);
     return isValid;
   }

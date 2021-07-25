@@ -24,7 +24,7 @@ export class AuthService extends ServiceHelper {
 
   async login(user) {
     const accessTokenPayload = { userAttributes: user };
-    Logger.debug('AUTH_PAYLOAD', accessTokenPayload);
+    Logger.debug(accessTokenPayload, 'AUTH_PAYLOAD');
     return this.generateToken(user._id, accessTokenPayload);
   }
 
@@ -39,5 +39,11 @@ export class AuthService extends ServiceHelper {
     }
 
     return insertResult;
+  }
+
+  async extendToken(user: any) {
+    const accessTokenPayload = { userAttributes: user };
+    Logger.debug(accessTokenPayload, 'AUTH_PAYLOAD');
+    return this.generateToken(user._id, accessTokenPayload);
   }
 }
