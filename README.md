@@ -48,11 +48,14 @@ make build-image
 
 ## Run Auth Management Image
 
+Make sure docker network with name bonsai-network already exist
+
 ```bash
-docker run -e 'JWT_SECRET_KEY=Yx$83(js)a#UgH' \
+docker run -it --rm --network bonsai-network --name auth-service -d \
+-e 'JWT_SECRET_KEY=Yx$83(js)a#UgH' \
 -e 'JWT_EXPIRATION=31d' \
 -e 'SERVICE_USER_NAME=USER_CLIENT' \
--e 'SERVICE_USER_HOST=localhost' \
+-e 'SERVICE_USER_HOST=user-service-host' \
 -e 'SERVICE_USER_PORT=4010' \
 -p 3000:3000 kadekpradnyana/bonsai-auth-mgmt
 ```
