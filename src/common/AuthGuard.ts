@@ -8,10 +8,6 @@ import { JwtService } from '@nestjs/jwt';
 import { isAfter } from 'date-fns';
 import { Request } from 'express';
 
-interface ITokenPayload {
-  userAttr;
-}
-
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
