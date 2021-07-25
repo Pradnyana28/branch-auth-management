@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  auth-service:
+    container_name: bonsai-auth-mgmt
+    restart: always
+    image: kadekpradnyana/bonsai-auth-mgmt
+    volumes:
+      - /bonsai/auth/node_modules
+      - .:/bonsai/auth
+    ports:
+      - 3010:3010
+    env_file:
+      - ./.env
+    environment:
+      - NODE_ENV=development
