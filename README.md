@@ -59,3 +59,27 @@ docker run -it --rm --network bonsai-network --name auth-service -d \
 -e 'SERVICE_USER_PORT=4010' \
 -p 3000:3000 kadekpradnyana/bonsai-auth-mgmt
 ```
+
+## Run Kubernetes Deployment
+
+Make sure minikube is installed on your machine since we're going to use it for easy development
+
+First, refresh your minikube environment by typing this command. These example will run two nodes. You can modify it as you want.
+
+```bash
+minikube delete
+minikube start --nodes=2
+```
+
+Second, apply the deployment file.
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+Third, start minikube service from the service name.
+
+```bash
+kubectl get svc
+minikube service auth-service
+```
