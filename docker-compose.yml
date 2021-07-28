@@ -4,7 +4,7 @@ services:
   auth-service:
     container_name: bonsai-auth-mgmt
     restart: always
-    image: kadekpradnyana/bonsai-auth-mgmt
+    # image: kadekpradnyana/bonsai-auth-mgmt
     build: 
       context: .
       dockerfile: ./Dockerfile.dev
