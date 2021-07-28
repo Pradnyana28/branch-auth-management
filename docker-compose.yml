@@ -5,12 +5,22 @@ services:
     container_name: bonsai-auth-mgmt
     restart: always
     image: kadekpradnyana/bonsai-auth-mgmt
+    build: 
+      context: .
+      dockerfile: ./Dockerfile.dev
+    networks: 
+      - bonsai-network
     volumes:
       - /bonsai/auth/node_modules
       - .:/bonsai/auth
     ports:
-      - 3010:3010
+      - 3000:3000
+      - 4000:4000
     env_file:
       - ./.env
     environment:
       - NODE_ENV=development
+
+networks: 
+  bonsai-network:
+    external: true
