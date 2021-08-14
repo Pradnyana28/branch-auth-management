@@ -17,6 +17,11 @@ spec:
       containers:
         - name: auth-service
           image: kadekpradnyana/bonsai-auth-mgmt
+          env:
+            - name: SERVICE_USER_HOST
+              value: "user-service"
+            - name: SERVICE_USER_PORT
+              value: "4010"
           resources:
             limits:
               memory: "512Mi"
