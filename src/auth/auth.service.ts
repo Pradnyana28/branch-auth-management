@@ -1,87 +1,49 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  RequestTimeoutException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ClientProxy } from '@nestjs/microservices';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { compareSync } from 'bcrypt';
-import {
-  catchError,
-  firstValueFrom,
-  throwError,
-  timeout,
-  TimeoutError,
-} from 'rxjs';
+import { ServiceHelper } from 'src/common/ServiceHelper';
 
 @Injectable()
-export class AuthService {
-  constructor(
-    @Inject('USER_CLIENT')
-    private readonly client: ClientProxy,
-    private readonly jwtService: JwtService,
-  ) {}
-
+export class AuthService extends ServiceHelper {
   async validateUser(username: string, password: string): Promise<any> {
     Logger.debug('START validating user to login', { username });
 
-    try {
-      const user = await firstValueFrom(
-        this.client.send({ role: 'user', cmd: 'get' }, { username }).pipe(
-          timeout(5000),
-          catchError((err) => {
-            if (err instanceof TimeoutError) {
-              return throwError(new RequestTimeoutException());
-            }
-            return throwError(err);
-          }),
-        ),
-      );
+    const user = await this.call({ role: 'user', cmd: 'get' }, { username });
 
-      if (!user) {
-        Logger.debug('No user found');
-        return null;
-      }
-
-      if (compareSync(password, user?.password)) {
-        return user;
-      }
-    } catch (e) {
-      Logger.log(e);
-      throw e;
+    if (!user) {
+      Logger.debug('User Not Found');
+      throw new UnauthorizedException('Username or password is incorrect');
     }
+
+    if (!compareSync(password, user?.password)) {
+      Logger.debug('Password doesnt match');
+      throw new UnauthorizedException('Username or password is incorrect');
+    }
+
+    return this.hideSensitiveData(user);
   }
 
   async login(user) {
-    const payload = { user, sub: user.id };
-
-    return {
-      userId: user.id,
-      accessToken: this.jwtService.sign(payload),
-    };
+    const accessTokenPayload = { userAttributes: user };
+    Logger.debug(accessTokenPayload, 'AUTH_PAYLOAD');
+    return this.generateToken(user._id, accessTokenPayload);
   }
 
-  async createUser(user) {
+  async registerUser(user) {
     Logger.debug('START registering new user');
 
-    try {
-      const insertResult = await firstValueFrom(
-        this.client.send({ role: 'user', cmd: 'create' }, user).pipe(
-          timeout(5000),
-          catchError((err) => {
-            if (err instanceof TimeoutError) {
-              return throwError(new RequestTimeoutException());
-            }
-            return throwError(err);
-          }),
-        ),
-      );
+    const insertResult = await this.call({ role: 'user', cmd: 'create' }, user);
 
-      return insertResult;
-    } catch (e) {
-      Logger.log(e);
-      throw e;
+    Logger.debug('RESPONSE', insertResult);
+    if (insertResult.error) {
+      return insertResult.error;
     }
+
+    return insertResult;
+  }
+
+  async extendToken(user: any) {
+    const accessTokenPayload = { userAttributes: user };
+    Logger.debug(accessTokenPayload, 'AUTH_PAYLOAD');
+    return this.generateToken(user._id, accessTokenPayload);
   }
 }
